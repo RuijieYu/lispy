@@ -8305,6 +8305,10 @@ The outer delimiters are stripped."
 (declare-function clojure-align "ext:clojure-mode")
 
 ;; TODO: Make me work with janet...
+(defvar lispy--cl-indent-functions '("defhydra")
+  "Function names whose body should be indented using
+`common-lisp-indent-function' in all lisp-like modes.")
+
 (defun lispy--normalize-1 ()
   "Normalize/prettify current sexp."
   (when (and (looking-at "(")
@@ -8315,9 +8319,14 @@ The outer delimiters are stripped."
     (let ((pt (point)))
       (skip-chars-backward " \t")
       (delete-region pt (point))))
-  (let* ((lisp-indent-function (if (looking-at "(\\(cl-defun\\|defhydra\\)")
-                                   #'common-lisp-indent-function
-                                 lisp-indent-function))
+  (let* ((lisp-indent-function
+          (if (looking-at
+               (concat "(" (progn
+                             (require 'regexp-opt)
+                             (regexp-opt
+                              lispy--cl-indent-functions))))
+              #'common-lisp-indent-function
+            lisp-indent-function))
          (bnd (lispy--bounds-dwim))
          (str (lispy--string-dwim bnd))
          (offset (if (eq major-mode 'racket-mode)
